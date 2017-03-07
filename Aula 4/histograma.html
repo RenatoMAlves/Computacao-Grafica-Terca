@@ -1,0 +1,96 @@
+<html>
+	<head>
+		<title>TODO supply a title</title>
+		<meta charset="windows-1252">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<script src="https://cdn.rawgit.com/oliver-moran/jimp/v0.2.27/browser/lib/jimp.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
+		<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+		<script type="text/javascript">
+		
+		  var arrIntensidadePixels = [];
+		  var imagem_atual = null;
+		  
+		  function mostrarImagem(element) {
+			var arquivo = element.files[0];
+			var reader = new FileReader();
+			reader.readAsArrayBuffer(arquivo);
+			reader.addEventListener('load', function(){
+			  Jimp.read(this.result)
+				.then(function(imagem){
+				  var imagem1 = imagem.clone();
+				  imagem1 = imagem1.resize(50, 50).greyscale();
+				  imagem_atual = imagem;
+				  exibirImagem(imagem1);
+				})
+				.catch(function(erro){
+				  console.log('Não foi possível processar os dados da imagem.');
+				  console.log(erro);
+				});
+			});
+		  }
+		  function exibirImagem(imagem) {
+			imagem.getBase64(Jimp.MIME_JPEG, function(err, src){
+				var img = document.getElementById('display');
+				img.setAttribute('src', src);
+			  });
+		  }
+		  
+		  // Load the Visualization API and the corechart package.
+		  google.charts.load('current', {'packages':['corechart']});
+
+		  // Set a callback to run when the Google Visualization API is loaded.
+		  //google.charts.setOnLoadCallback(drawChart);
+
+		  // Callback that creates and populates a data table,
+		  // instantiates the pie chart, passes in the data and
+		  // draws it.
+		  function drawChart() {
+			percorrerImagem(imagem_atual);
+			console.log(arrIntensidadePixels.length);
+			// Create the data table.
+			var data = new google.visualization.DataTable();
+			data.addColumn('number', 'Topping');
+			data.addColumn('number', 'Pixel');
+			for(var i=0; i < arrIntensidadePixels.length; i++){
+				data.addRow([i+1,arrIntensidadePixels[i]]);
+			}
+			// Set chart options
+			var options = {'title':'Histograma',
+						   'width':'100%',
+						   'height':300};
+
+			// Instantiate and draw our chart, passing in some options.
+			var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
+			chart.draw(data, options);
+			arrIntensidadePixels = [];
+		  }
+		  
+		  function percorrerImagem(imagem){
+			var w = imagem.bitmap.width;
+            var h = imagem.bitmap.height;
+			for(var i = 0; i < w; i++) {
+                for(var j = 0; j < h; j++) {
+					var cor = imagem.getPixelColor(i, j);
+                    var rgba = Jimp.intToRGBA(cor);
+					var intensidadeP = parseInt((rgba.r+rgba.g+rgba.b)/3);
+					arrIntensidadePixels.push(intensidadeP);
+				}
+			}
+		  }
+		
+		</script>
+	</head>
+	<body>
+		<p>Escolha um arquivo de imagem como fundo</p>
+		<input type="file" id="img" onchange="mostrarImagem(this)">
+		<br>
+		<img id="display">
+		
+		<!--Div that will hold the pie chart-->
+		<br/>
+		<button onclick="drawChart()">aplicar</button>
+		<br/>
+		<div id='chart_div'></div>
+	</body>
+</html>
